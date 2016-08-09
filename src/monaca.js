@@ -316,10 +316,10 @@
    * Filters files and directories from being uploaded and downloaded
    */
   Monaca.prototype._fileFilter = function(f, allowFiles, projectDir, source) {
-    if (/^\/\.monaca\/(project_info\.json|android\/AndroidManifest\.xml|ios\/MonacaApp-Info\.plist)$/.test(f)) {
+    if (/^\/\.monaca\/project_info\.json$/.test(f)) {
       return true;
     }
-
+    
     // Exclude other hidden files and folders from being uploaded.
     if (f.indexOf('/.') >= 0 && source === "uploadProject") {
       return false;
@@ -333,18 +333,16 @@
       || /^\/platforms\/ios\/(MonacaApp\/|MonacaApp-Info.plist$)/.test(f)
       || /^\/platforms\/android\/(res\/|AndroidManifest.xml$)/.test(f)
       || /^\/platforms\/(chrome|winrt)\//.test(f)
-
-      // Everything else
-      || /^\/(www|merges|plugins|src|typings|res)(\/?$|\/)/.test(f)
     ) {
       return true;
     }
     
     // Check if file is present in one of the /www, /merges and /plugins folders and also in list of allowed files.
-    return (
-      allowFiles.length > 0
-      && (allowFiles.indexOf(path.join(projectDir, f)) >= 0)
-    );
+    if(/^\/(www|merges|plugins|src|typings|res)(\/?$|\/)/.test(f)) {
+      return (allowFiles.indexOf(path.join(projectDir, f)) >= 0);
+    } else {
+      return false;
+    }
   };
 
   Monaca.prototype._filterFiles = function(dst, src) {
