@@ -2458,7 +2458,6 @@
     process.stdout.write('Running Transpiler...\n');
 
     try {
-      process.env.NODE_PATH = USER_CORDOVA;
 
       // Check for nodejs version dependency requirement for angular 2.
       var projectConfig = this.fetchProjectData(projectDir);
@@ -2468,20 +2467,19 @@
         }
       }
 
-      var webpackProcessLog = [];
-
       var parameters = ['-p', '--config', webpackConfig];
       if(options.watch) {
         parameters.push('--watch');
       }
 
-      var webpackProcess = child_process.spawn(this.getWebpackBinPath(), parameters, {
+      var webpackProcess = child_process[(this.clientType === 'cli') ? 'spawn' : 'fork'](this.getWebpackBinPath(), parameters, {
         cwd: path.resolve(projectDir),
         env: extend({}, process.env, {
           NODE_ENV: JSON.stringify('production'),
           WP_CACHE: options.cache || ''
         }),
-        stdio: (this.clientType === 'cli') ? 'inherit' : 'pipe'
+        silent: (this.clientType === 'localkit'),
+        stdio: Array(3).fill((this.clientType === 'cli') ? 'inherit' : 'pipe') // Array version for 'fork'
       });
 
       if(this.clientType === 'localkit') {
@@ -2493,18 +2491,26 @@
             });
           }.bind(this)
         );
+
+        webpackProcess.stderr.on('data',
+          function(data) {
+            this.emitter.emit('output', {
+              type: 'error',
+              message: data,
+              log: data
+            });
+          }.bind(this)
+        );
       }
 
       webpackProcess.on('exit', function(code) {
 
         if(code === 1) {
           var error = new Error('Error has occured while transpiling ' + projectDir + ' with webpack. Please check the logs.');
-          error.log = webpackProcessLog;
           deferred.reject(error);
         } else {
           deferred.resolve({
-            message: 'Transpiling finished for ' + projectDir,
-            log: webpackProcessLog
+            message: 'Transpiling finished for ' + projectDir
           });
         }
       });
