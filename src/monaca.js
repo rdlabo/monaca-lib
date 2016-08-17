@@ -2385,7 +2385,10 @@
    * @return {String}
    */
   Monaca.prototype.getWebpackBinPath = function() {
-    return path.resolve(path.join(USER_CORDOVA, 'node_modules', '.bin', (process.platform === 'win32' ? 'webpack.cmd' : 'webpack')));
+    var webpackPath = path.resolve(USER_CORDOVA, 'node_modules', 'webpack');
+    var webpackBinField = require(path.join(webpackPath, 'package.json')).bin;
+    var webpackBin = typeof webpackBinField === 'object' ? webpackBinField.webpack : webpackBinField;
+    return path.join(webpackPath, webpackBin);
   };
 
   /**
@@ -2472,7 +2475,7 @@
         parameters.push('--watch');
       }
 
-      var webpackProcess = child_process[(this.clientType === 'cli') ? 'spawn' : 'fork'](this.getWebpackBinPath(), parameters, {
+      var webpackProcess = child_process.fork(this.getWebpackBinPath(), parameters, {
         cwd: path.resolve(projectDir),
         env: extend({}, process.env, {
           NODE_ENV: JSON.stringify('production'),
