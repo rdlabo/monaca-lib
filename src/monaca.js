@@ -27,7 +27,7 @@
   var localProperties = require(path.join(__dirname, 'monaca', 'localProperties'));
 
   var USER_CORDOVA = path.join(
-      process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'],
+      process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'],
       '.cordova'
   );
 
@@ -2385,6 +2385,10 @@
    * @return {String}
    */
   Monaca.prototype.getWebpackBinPath = function() {
+    if (process.platform === 'win32'){
+      return path.resolve(USER_CORDOVA, 'node_modules', '.bin', 'webpack.cmd');
+    }
+
     var webpackPath = path.resolve(USER_CORDOVA, 'node_modules', 'webpack');
     var webpackBinField = require(path.join(webpackPath, 'package.json')).bin;
     var webpackBin = typeof webpackBinField === 'object' ? webpackBinField.webpack : webpackBinField;
@@ -2475,7 +2479,11 @@
         parameters.push('--watch');
       }
 
-      var webpackProcess = child_process.fork(this.getWebpackBinPath(), parameters, {
+      if (process.platform !== 'win32') {
+        parameters.unshift(this.getWebpackBinPath());
+      }
+
+      var webpackProcess = child_process.spawn((process.platform === 'win32') ? this.getWebpackBinPath() : process.execPath, parameters, {
         cwd: path.resolve(projectDir),
         env: extend({}, process.env, {
           NODE_ENV: JSON.stringify('production'),
